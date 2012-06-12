@@ -53,6 +53,7 @@ public final class PdBase {
 	static {
 		try {
 			Class<?> inner[] = Class.forName("android.os.Build").getDeclaredClasses();
+			System.loadLibrary("pd");
 			int version = -1;
 			for (Class<?> c : inner) {
 				if (c.getCanonicalName().equals("android.os.Build.VERSION")) {
