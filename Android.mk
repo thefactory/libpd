@@ -38,7 +38,7 @@ PD_CFLAGS := -DPD -DHAVE_UNISTD_H -DHAVE_LIBDL -DUSEAPI_DUMMY \
 PD_LDLIBS := -ldl
 
 
-# Build libpd.
+# Build libpd
 
 include $(CLEAR_VARS)
 
@@ -50,7 +50,7 @@ LOCAL_SRC_FILES := $(PD_SRC_FILES)
 include $(BUILD_SHARED_LIBRARY)
 
 
-# Build plain JNI binary.
+# Build plain JNI binary
 
 include $(CLEAR_VARS)
 
@@ -63,7 +63,7 @@ LOCAL_SHARED_LIBRARIES := pd
 include $(BUILD_SHARED_LIBRARY)
 
 
-# Build OpenSL JNI binary.
+# Build OpenSL JNI binary
 
 include $(CLEAR_VARS)
 
@@ -77,7 +77,7 @@ LOCAL_SHARED_LIBRARIES := pd
 include $(BUILD_SHARED_LIBRARY)
 
 
-# Build libchoice.so.
+# Build libchoice.so
 
 include $(CLEAR_VARS)
 
@@ -116,7 +116,7 @@ LOCAL_SHARED_LIBRARIES := pd
 include $(BUILD_SHARED_LIBRARY)
 
 
-#Build libfiddle~.so
+# Build libfiddle~.so
 
 include $(CLEAR_VARS)
 
@@ -129,7 +129,7 @@ LOCAL_SHARED_LIBRARIES := pd
 include $(BUILD_SHARED_LIBRARY)
 
 
-#Build libsigmund~.so
+# Build libsigmund~.so
 
 include $(CLEAR_VARS)
 
@@ -142,7 +142,7 @@ LOCAL_SHARED_LIBRARIES := pd
 include $(BUILD_SHARED_LIBRARY)
 
 
-#Build libpique.so
+# Build libpique.so
 
 include $(CLEAR_VARS)
 
@@ -155,7 +155,7 @@ LOCAL_SHARED_LIBRARIES := pd
 include $(BUILD_SHARED_LIBRARY)
 
 
-#Build libloop~.so
+# Build libloop~.so
 
 include $(CLEAR_VARS)
 
