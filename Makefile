@@ -7,10 +7,11 @@ ifeq ($(UNAME), Darwin)  # Mac
   PDNATIVE_PLATFORM = mac
   PDNATIVE_ARCH = 
   PLATFORM_CFLAGS = -DHAVE_LIBDL -O3 -arch x86_64 -arch i386 -g \
-    -I/System/Library/Frameworks/JavaVM.framework/Headers
+    -I/System/Library/Frameworks/JavaVM.framework/Headers -I/usr/local/include
   LDFLAGS = -arch x86_64 -arch i386 -dynamiclib -ldl
   CSHARP_LDFLAGS = $(LDFLAGS)
-  JAVA_LDFLAGS = -framework JavaVM $(LDFLAGS)
+  JAVA_LDFLAGS = -lportaudio -framework CoreAudio -framework AudioToolbox \
+      -framework AudioUnit -framework CoreServices -framework JavaVM $(LDFLAGS)
 else
   ifeq ($(OS), Windows_NT)  # Windows, use Mingw
     CC = gcc
@@ -82,7 +83,7 @@ PDJAVA_JAR_CLASSES = \
 
 	
 JNI_FILE = libpd_wrapper/ringbuffer.c libpd_wrapper/z_queued.c \
-	jni/z_jni_plain.c
+	jni/z_jni_pa.c
 JNIH_FILE = jni/z_jni.h
 JAVA_BASE = java/org/puredata/core/PdBase.java
 HOOK_SET = libpd_wrapper/z_csharp_helper.c
