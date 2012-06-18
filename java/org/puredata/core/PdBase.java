@@ -53,10 +53,7 @@ public final class PdBase {
 	static {
 		try {
 			Class<?> inner[] = Class.forName("android.os.Build").getDeclaredClasses();
-<<<<<<< HEAD
-=======
 			// Now we know we're running on an Android device.
->>>>>>> opensl
 			System.loadLibrary("pd");
 			int version = -1;
 			for (Class<?> c : inner) {
