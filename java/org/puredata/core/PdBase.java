@@ -133,6 +133,23 @@ public final class PdBase {
 	public native static boolean implementsAudio();
 	
 	/**
+	 * Returns a sample rate recommendation, or a negative value if no recommendation is available.
+	 */
+	public native static int suggestSampleRate();
+	
+	/**
+	 * Returns a recommendation for the number of input channels, or a negative value if no
+	 * recommendation is available.
+	 */
+	public native static int suggestInputChannels();
+	
+	/**
+	 * Returns a recommendation for the number of output channels, or a negative value if no
+	 * recommendation is available.
+	 */
+	public native static int suggestOutputChannels();
+	
+	/**
 	 * Closes the audio components if implementsAudio is true, otherwise no-op.
 	 */
 	public native static void closeAudio();

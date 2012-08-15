@@ -26,6 +26,22 @@ extern "C" {
 #endif
 
 /*
+ * Returns the recommended sample rate for optimum audio performance,
+ * typically CD sample rate (44.1kHz).
+ */
+int opensl_suggest_sample_rate();
+
+/*
+ * Returns the recommended number of input channels, typically one.
+ */
+int opensl_suggest_input_channels();
+
+/*
+ * Returns the recommended number of output channels, typically two.
+ */
+int opensl_suggest_output_channels();
+
+/*
  * Processing callback; takes a processing context (which is just a pointer to
  * whatever data you want to pass to the callback), the sample rate, the
  * buffer size in frames, the number of input and output channels, as well as
@@ -42,22 +58,24 @@ struct _opensl_stream;
 typedef struct _opensl_stream OPENSL_STREAM;
 
 /*
- * Opens the audio device for the given sample rate, channel configuration,
- * and buffer size; registers an audio processing callback that will receive
- * a context pointer (which may be NULL if no context is needed).  The context
- * is owned by the caller.
+ * Opens the audio device for the given sample rate and channel configuration;
+ * registers an audio processing callback that will receive a context pointer
+ * (which may be NULL if no context is needed).  The context is owned by the
+ * caller.
  *
  * For the time being, each channel number must be 0, 1, or 2; at least one
  * channel number must be nonzero.
  *
- * A buffer size of 1024 frames seems to be safe; significantly smaller buffer
- * sizes may result in glitchy audio.
- *
  * Returns NULL on failure.
  */
 OPENSL_STREAM *opensl_open(
-    int sRate, int inChans, int outChans, int bufFrames,
+    int sample_rate, int input_channels, int output_channels,
     opensl_process_t proc, void *context);
+
+/*
+ * Returns the buffer size (in frames) of the given OpenSL stream.
+ */
+int opensl_buffer_size(OPENSL_STREAM *p);
 
 /*
  * Stops playback and frees all resources associated with the given stream,
@@ -75,10 +93,8 @@ int opensl_start(OPENSL_STREAM *p);
 
 /*
  * Pauses the audio stream.
- *
- * Returns 0 on success.
  */
-int opensl_pause(OPENSL_STREAM *p);
+void opensl_pause(OPENSL_STREAM *p);
 
 #ifdef __cplusplus
 };
