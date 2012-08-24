@@ -12,7 +12,7 @@ ifeq ($(UNAME), Darwin)  # Mac
   CSHARP_LDFLAGS = $(LDFLAGS)
   JAVA_LDFLAGS = -framework CoreAudio -framework AudioToolbox -framework AudioUnit \
     -framework CoreServices -framework JavaVM $(LDFLAGS)
-  PA_STATIC = /usr/local/lib/libportaudio.a
+  PORTAUDIO_LIB = /usr/local/lib/libportaudio.a
 else
   ifeq ($(OS), Windows_NT)  # Windows, use Mingw
     CC = gcc
@@ -28,6 +28,7 @@ else
     CSHARP_LDFLAGS = $(MINGW_LDFLAGS) -Wl,--output-def=libs/libpdcsharp.def \
       -Wl,--out-implib=libs/libpdcsharp.lib
     JAVA_LDFLAGS = $(MINGW_LDFLAGS) -Wl,--kill-at
+    PORTAUDIO_LIB = -lportaudio
   else  # Assume Linux
     SOLIB_EXT = so
     PDNATIVE_PLATFORM = linux
@@ -39,6 +40,7 @@ else
     LDFLAGS = -shared -ldl -Wl,-Bsymbolic
     CSHARP_LDFLAGS = $(LDFLAGS)
     JAVA_LDFLAGS = $(LDFLAGS)
+    PORTAUDIO_LIB = -lportaudio
   endif
 endif
 
@@ -114,7 +116,7 @@ $(JNIH_FILE): $(JAVA_BASE)
 
 $(PDJAVA_NATIVE): ${PD_FILES:.c=.o} ${JNI_FILE:.c=.o}
 	mkdir -p $(PDJAVA_DIR)
-	$(CC) -o $(PDJAVA_NATIVE) $^ $(PA_STATIC) -lm -lpthread $(JAVA_LDFLAGS) 
+	$(CC) -o $(PDJAVA_NATIVE) $^ $(PORTAUDIO_LIB) -lm -lpthread $(JAVA_LDFLAGS) 
 	cp $(PDJAVA_NATIVE) libs/
 
 $(PDJAVA_JAR): $(PDJAVA_NATIVE) $(PDJAVA_JAR_CLASSES)
