@@ -10,8 +10,9 @@ ifeq ($(UNAME), Darwin)  # Mac
     -I/System/Library/Frameworks/JavaVM.framework/Headers -I/usr/local/include
   LDFLAGS = -arch x86_64 -arch i386 -dynamiclib -ldl
   CSHARP_LDFLAGS = $(LDFLAGS)
-  JAVA_LDFLAGS = -lportaudio -framework CoreAudio -framework AudioToolbox \
-      -framework AudioUnit -framework CoreServices -framework JavaVM $(LDFLAGS)
+  JAVA_LDFLAGS = -framework CoreAudio -framework AudioToolbox -framework AudioUnit \
+    -framework CoreServices -framework JavaVM $(LDFLAGS)
+  PA_STATIC = /usr/local/lib/libportaudio.a
 else
   ifeq ($(OS), Windows_NT)  # Windows, use Mingw
     CC = gcc
@@ -113,7 +114,7 @@ $(JNIH_FILE): $(JAVA_BASE)
 
 $(PDJAVA_NATIVE): ${PD_FILES:.c=.o} ${JNI_FILE:.c=.o}
 	mkdir -p $(PDJAVA_DIR)
-	$(CC) -o $(PDJAVA_NATIVE) $^ -lm -lpthread $(JAVA_LDFLAGS) 
+	$(CC) -o $(PDJAVA_NATIVE) $^ $(PA_STATIC) -lm -lpthread $(JAVA_LDFLAGS) 
 	cp $(PDJAVA_NATIVE) libs/
 
 $(PDJAVA_JAR): $(PDJAVA_NATIVE) $(PDJAVA_JAR_CLASSES)
