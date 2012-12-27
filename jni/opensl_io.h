@@ -1,6 +1,5 @@
 /*
- * Copyright 2012 Google Inc.
- * Author: Peter Brinkmann (brinkmann@google.com)
+ * Copyright 2012 Peter Brinkmann (peter.brinkmann@gmail.com)
  *
  * Based on sample code by Victor Lazzarini, available at
  * http://audioprograming.wordpress.com/2012/03/03/android-audio-streaming-with-opensl-es-and-the-ndk/
@@ -26,30 +25,16 @@ extern "C" {
 #endif
 
 /*
- * Returns the recommended sample rate for optimum audio performance,
- * typically CD sample rate (44.1kHz).
- */
-int opensl_suggest_sample_rate();
-
-/*
- * Returns the recommended number of input channels, typically one.
- */
-int opensl_suggest_input_channels();
-
-/*
- * Returns the recommended number of output channels, typically two.
- */
-int opensl_suggest_output_channels();
-
-/*
  * Processing callback; takes a processing context (which is just a pointer to
  * whatever data you want to pass to the callback), the sample rate, the
  * buffer size in frames, the number of input and output channels, as well as
  * input and output buffers whose size must be the number of channels times
  * the number of frames per buffer.
  */
-typedef void (*opensl_process_t)(void *context, int sRate, int bufFrames,
-    int inChans, const short *inBuf, int outChans, short *outBuf);
+typedef void (*opensl_process_t)
+    (void *context, int sample_rate, int buffer_frames,
+     int input_channels, const short *input_buffer,
+     int output_channels, short *output_buffer);
 
 /*
  * Abstract data type for streaming audio with OpenSL.
@@ -63,6 +48,14 @@ typedef struct _opensl_stream OPENSL_STREAM;
  * (which may be NULL if no context is needed).  The context is owned by the
  * caller.
  *
+ * The internal buffer sizes are the buffer sizes (in frames) at which OpenSL
+ * operates; 512 is a reasonable default. As of Android 4.2, the AudioManager
+ * class in Java offers a method that will yield the recommended sample rate
+ * and buffer size for OpenSL.
+ *
+ * The external buffer size is the buffer size for the processing callback. For
+ * example, Pd (via libpd) uses 64 frames per buffer.
+ *
  * For the time being, each channel number must be 0, 1, or 2; at least one
  * channel number must be nonzero.
  *
@@ -70,12 +63,8 @@ typedef struct _opensl_stream OPENSL_STREAM;
  */
 OPENSL_STREAM *opensl_open(
     int sample_rate, int input_channels, int output_channels,
-    opensl_process_t proc, void *context);
-
-/*
- * Returns the buffer size (in frames) of the given OpenSL stream.
- */
-int opensl_buffer_size(OPENSL_STREAM *p);
+    int internal__input_buffer_size, int internal__output_buffer_size,
+    int external_buffer_size, opensl_process_t proc, void *context);
 
 /*
  * Stops playback and frees all resources associated with the given stream,
@@ -83,6 +72,11 @@ int opensl_buffer_size(OPENSL_STREAM *p);
  * the context (if any) is the responsibility of the caller.
  */
 void opensl_close(OPENSL_STREAM *p);
+
+/*
+ * Returns nonzero value if the given stream is currently running.
+ */
+int opensl_is_running(OPENSL_STREAM *p);
 
 /*
  * Starts the audio stream.

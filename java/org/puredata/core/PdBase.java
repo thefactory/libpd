@@ -58,7 +58,11 @@ public final class PdBase {
 			int version = -1;
 			for (Class<?> c : inner) {
 				if (c.getCanonicalName().equals("android.os.Build.VERSION")) {
-					version = c.getDeclaredField("SDK_INT").getInt(null);
+					try {
+						version = c.getDeclaredField("SDK_INT").getInt(null);
+					} catch (Exception e) {
+						version = 3;  // SDK_INT is not available for Cupcake.
+					}
 					break;
 				}
 			}
@@ -70,6 +74,7 @@ public final class PdBase {
 				System.loadLibrary("pdnative");
 			}
 		} catch (Exception e) {
+			// Now we know we aren't running on an Android device.
 			NativeLoader.loadLibrary("pthreadGC2", "windows");
 			NativeLoader.loadLibrary("pdnative");
 		}
@@ -124,13 +129,28 @@ public final class PdBase {
 	 * 
 	 * @return error code, 0 on success
 	 */
-	public native static int openAudio(int inputChannels, int outputChannels, int sampleRate);
+	public static int openAudio(int inputChannels, int outputChannels, int sampleRate) {
+		return openAudio(inputChannels, outputChannels, sampleRate, null);
+	}
+	
+	/**
+	 * Sets up Pd audio; must be called before rendering audio with process or startAudio.
+	 * 
+	 * @return error code, 0 on success
+	 */
+	public native static int openAudio(int inputChannels, int outputChannels, int sampleRate, Map<String, String> options);
 	
 	/**
 	 * Indicates whether the underlying binary implements audio, e.g.,
-	 * with OpenSL or JACK.
+	 * with OpenSL or PortAudio or JACK.
 	 */
 	public native static boolean implementsAudio();
+	
+	/**
+	 * Indicates how the underlying binary implements audio, e.g.,
+	 * with OpenSL or PortAudio or JACK. Returns null if it doesn't implement audio.
+	 */
+	public native static String audioImplementation();
 	
 	/**
 	 * Returns a sample rate recommendation, or a negative value if no recommendation is available.
