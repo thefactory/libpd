@@ -7,6 +7,7 @@
 #include "m_pd.h"
 #include "s_stuff.h"
 #include <stdio.h>
+#include <errno.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -530,12 +531,21 @@ done:
 
 #define SMALLMSG 5
 #define HUGEMSG 1000
-#ifdef _WIN32
-#include <malloc.h>
-#else
-#include <alloca.h>
+
+#ifndef HAVE_ALLOCA     /* can work without alloca() but we never need it */
+#define HAVE_ALLOCA 1
 #endif
-#if HAVE_ALLOCA
+
+#ifdef HAVE_ALLOCA
+
+#ifdef HAVE_ALLOCA_H        /* ifdef nonsense to find include for alloca() */
+# include <alloca.h>        /* linux, mac, mingw, cygwin */
+#elif defined _MSC_VER
+# include <malloc.h>        /* MSVC */
+#else
+# include <stddef.h>        /* BSDs for example */
+#endif                      /* end alloca() ifdef nonsense */
+
 #define ATOMS_ALLOCA(x, n) ((x) = (t_atom *)((n) < HUGEMSG ?  \
         alloca((n) * sizeof(t_atom)) : getbytes((n) * sizeof(t_atom))))
 #define ATOMS_FREEA(x, n) ( \
@@ -738,23 +748,6 @@ broken:
          ATOMS_FREEA(mstack, maxnargs);
 }
 
-static int binbuf_doopen(char *s, int mode)
-{
-    char namebuf[MAXPDSTRING];
-#ifdef _WIN32
-    mode |= O_BINARY;
-#endif
-    sys_bashfilename(s, namebuf);
-    return (open(namebuf, mode));
-}
-
-static FILE *binbuf_dofopen(char *s, char *mode)
-{
-    char namebuf[MAXPDSTRING];
-    sys_bashfilename(s, namebuf);
-    return (fopen(namebuf, mode));
-}
-
 int binbuf_read(t_binbuf *b, char *filename, char *dirname, int crflag)
 {
     long length;
@@ -768,7 +761,7 @@ int binbuf_read(t_binbuf *b, char *filename, char *dirname, int crflag)
         strcat(namebuf, dirname), strcat(namebuf, "/");
     strcat(namebuf, filename);
     
-    if ((fd = binbuf_doopen(namebuf, 0)) < 0)
+    if ((fd = sys_open(namebuf, 0)) < 0)
     {
         fprintf(stderr, "open: ");
         perror(namebuf);
@@ -869,7 +862,7 @@ int binbuf_write(t_binbuf *x, char *filename, char *dir, int crflag)
         deleteit = 1;
     }
     
-    if (!(f = binbuf_dofopen(fbuf, "w")))
+    if (!(f = sys_fopen(fbuf, "w")))
     {
         fprintf(stderr, "open: ");
         sys_unixerror(fbuf);
@@ -1462,15 +1455,17 @@ void binbuf_evalfile(t_symbol *name, t_symbol *dir)
     t_binbuf *b = binbuf_new();
     int import = !strcmp(name->s_name + strlen(name->s_name) - 4, ".pat") ||
         !strcmp(name->s_name + strlen(name->s_name) - 4, ".mxt");
-        /* set filename so that new canvases can pick them up */
     int dspstate = canvas_suspend_dsp();
+        /* set filename so that new canvases can pick them up */
     glob_setfilename(0, name, dir);
     if (binbuf_read(b, name->s_name, dir->s_name, 0))
-    {
-        perror(name->s_name);
-    }
+        error("%s: read failed; %s", name->s_name, strerror(errno));
     else
     {
+            /* save bindings of symbols #N, #A (and restore afterward) */
+        t_pd *bounda = gensym("#A")->s_thing, *boundn = s__N.s_thing;
+        gensym("#A")->s_thing = 0;
+        s__N.s_thing = &pd_canvasmaker;
         if (import)
         {
             t_binbuf *newb = binbuf_convert(b, 1);
@@ -1478,6 +1473,8 @@ void binbuf_evalfile(t_symbol *name, t_symbol *dir)
             b = newb;
         }
         binbuf_eval(b, 0, 0, 0);
+        gensym("#A")->s_thing = bounda;
+        s__N.s_thing = boundn;
     }
     glob_setfilename(0, &s_, &s_);
     binbuf_free(b);
@@ -1493,6 +1490,9 @@ t_pd *glob_evalfile(t_pd *ignore, t_symbol *name, t_symbol *dir)
         is still necessary -- probably not. */
 
     int dspstate = canvas_suspend_dsp();
+    t_pd *boundx = s__X.s_thing;
+        s__X.s_thing = 0;       /* don't save #X; we'll need to leave it bound
+                                for the caller to grab it. */
     binbuf_evalfile(name, dir);
     while ((x != s__X.s_thing) && s__X.s_thing) 
     {
@@ -1501,5 +1501,6 @@ t_pd *glob_evalfile(t_pd *ignore, t_symbol *name, t_symbol *dir)
     }
     pd_doloadbang();
     canvas_resume_dsp(dspstate);
+    s__X.s_thing = boundx;
     return x;
 }

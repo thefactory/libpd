@@ -24,7 +24,7 @@ static char* strnescape(char *dest, const char *src, size_t len)
     for(; ptout < len; ptin++, ptout++)
     {
         int c = src[ptin];
-        if (c == '\\' || c == '{' || c == '}' || c == ';')
+        if (c == '\\' || c == '{' || c == '}')
             dest[ptout++] = '\\';
         dest[ptout] = src[ptin];
         if (c==0) break;
@@ -51,7 +51,11 @@ static void dopost(const char *s)
     if (sys_printhook)
         (*sys_printhook)(s);
     else if (sys_printtostderr)
+#ifdef _WIN32
+        fwprintf(stderr, L"%S", s);
+#else
         fprintf(stderr, "%s", s);
+#endif
     else
     {
         char upbuf[MAXPDSTRING];
@@ -212,9 +216,9 @@ void error(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(buf, MAXPDSTRING-1, fmt, ap);
     va_end(ap);
+    strcat(buf, "\n");
 
     doerror(NULL, buf);
-    endpost();
 }
 
 void verbose(int level, const char *fmt, ...)
@@ -223,15 +227,16 @@ void verbose(int level, const char *fmt, ...)
     va_list ap;
     t_int arg[8];
     int i;
+    int loglevel=level+3;
 
     if(level>sys_verbose)return;
 
     va_start(ap, fmt);
     vsnprintf(buf, MAXPDSTRING-1, fmt, ap);
     va_end(ap);
-    dologpost(NULL, level+4, buf);
+    strcat(buf, "\n");
 
-    endpost();
+    dologpost(NULL, loglevel, buf);
 }
 
     /* here's the good way to log errors -- keep a pointer to the
@@ -253,9 +258,9 @@ void pd_error(void *object, const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(buf, MAXPDSTRING-1, fmt, ap);
     va_end(ap);
+    strcat(buf, "\n");
 
     doerror(object, buf);
-    endpost();  
 
     error_object = object;
     if (!saidit)
@@ -300,9 +305,9 @@ void bug(const char *fmt, ...)
     va_start(ap, fmt);
     vsnprintf(buf, MAXPDSTRING-1, fmt, ap);
     va_end(ap);
+    strcat(buf, "\n");
 
     dobug(buf);
-    endpost();
 }
 
     /* this isn't worked out yet. */

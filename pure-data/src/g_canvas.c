@@ -27,10 +27,14 @@ struct _canvasenvironment
 #define GLIST_DEFCANVASWIDTH 450
 #define GLIST_DEFCANVASHEIGHT 300
 
+/* since the window decorations aren't included, open new windows a few
+pixels down so you can posibly move the window later.  Apple needs less
+because its menus are at top of screen; we're more generous for other
+desktops because the borders have both window title area and menus. */
 #ifdef __APPLE__
 #define GLIST_DEFCANVASYLOC 22
 #else
-#define GLIST_DEFCANVASYLOC 0
+#define GLIST_DEFCANVASYLOC 50
 #endif
 
 /* ---------------------- variables --------------------------- */
@@ -102,6 +106,13 @@ void glob_setfilename(void *dummy, t_symbol *filesym, t_symbol *dirsym)
 {
     canvas_newfilename = filesym;
     canvas_newdirectory = dirsym;
+}
+
+void glob_menunew(void *dummy, t_symbol *filesym, t_symbol *dirsym)
+{
+    glob_setfilename(dummy, filesym, dirsym);
+    canvas_new(0, 0, 0, 0);
+    canvas_pop((t_canvas *)s__X.s_thing, 1);
 }
 
 t_canvas *canvas_getcurrent(void)
@@ -1148,6 +1159,17 @@ void canvas_update_dsp(void)
     if (canvas_dspstate) canvas_start_dsp();
 }
 
+/* the "dsp" message to pd starts and stops DSP somputation, and, if
+appropriate, also opens and closes the audio device.  On exclusive-access
+APIs such as ALSA, MMIO, and ASIO (I think) it\s appropriate to close the
+audio devices when not using them; but jack behaves better if audio I/O
+simply keeps running.  This is wasteful of CPU cycles but we do it anyway
+and can perhaps regard this is a design flaw in jack that we're working around
+here.  The function audio_shouldkeepopen() is provided by s_audio.c to tell
+us that we should elide the step of closing audio when DSP is turned off.*/
+
+int audio_shouldkeepopen( void);
+
 void glob_dsp(void *dummy, t_symbol *s, int argc, t_atom *argv)
 {
     int newstate;
@@ -1162,7 +1184,8 @@ void glob_dsp(void *dummy, t_symbol *s, int argc, t_atom *argv)
         else if (!newstate && canvas_dspstate)
         {
             canvas_stop_dsp();
-            sys_set_audio_state(0);
+            if (!audio_shouldkeepopen())
+                sys_set_audio_state(0);
         }
     }
     else post("dsp state %d", canvas_dspstate);

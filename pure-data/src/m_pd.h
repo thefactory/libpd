@@ -9,9 +9,10 @@ extern "C" {
 #endif
 
 #define PD_MAJOR_VERSION 0
-#define PD_MINOR_VERSION 43
-#define PD_BUGFIX_VERSION 3
+#define PD_MINOR_VERSION 44
+#define PD_BUGFIX_VERSION 2
 #define PD_TEST_VERSION ""
+extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 
 /* old name for "MSW" flag -- we have to take it for the sake of many old
 "nmakefiles" for externs, which will define NT and not MSW */
@@ -56,6 +57,25 @@ extern "C" {
 #if !defined(_SIZE_T) && !defined(_SIZE_T_)
 #include <stddef.h>     /* just for size_t -- how lame! */
 #endif
+
+/* Microsoft Visual Studio is not C99, it does not provide stdint.h */
+#ifdef _MSC_VER
+typedef signed __int8     int8_t;
+typedef signed __int16    int16_t;
+typedef signed __int32    int32_t;
+typedef signed __int64    int64_t;
+typedef unsigned __int8   uint8_t;
+typedef unsigned __int16  uint16_t;
+typedef unsigned __int32  uint32_t;
+typedef unsigned __int64  uint64_t;
+#elif defined(IRIX)
+typedef long int32_t;  /* a data type that has 32 bits */
+#else
+# include <stdint.h>
+#endif
+
+/* for FILE, needed by sys_fopen() and sys_fclose() only */
+#include <stdio.h>
 
 #define MAXPDSTRING 1000        /* use this for anything you want */
 #define MAXPDARG 5              /* max number of args we can typecheck today */
@@ -474,11 +494,18 @@ EXTERN void sys_bashfilename(const char *from, char *to);
 EXTERN void sys_unbashfilename(const char *from, char *to);
 EXTERN int open_via_path(const char *dir, const char *name, const char *ext,
     char *dirresult, char **nameresult, unsigned int size, int bin);
-EXTERN int sys_close(int fd);
 EXTERN int sched_geteventno(void);
 EXTERN double sys_getrealtime(void);
 EXTERN int (*sys_idlehook)(void);   /* hook to add idle time computation */
 
+/* Win32's open()/fopen() do not handle UTF-8 filenames so we need
+ * these internal versions that handle UTF-8 filenames the same across
+ * all platforms.  They are recommended for use in external
+ * objectclasses as well so they work with Unicode filenames on Windows */
+EXTERN int sys_open(const char *path, int oflag, ...);
+EXTERN int sys_close(int fd);
+EXTERN FILE *sys_fopen(const char *filename, const char *mode);
+EXTERN int sys_fclose(FILE *stream);
 
 /* ------------  threading ------------------- */ 
 EXTERN void sys_lock(void);
@@ -639,7 +666,7 @@ defined, there is a "te_xpix" field in objects, not a "te_xpos" as before: */
 
 #define PD_USE_TE_XPIX
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__arm__)
 /* a test for NANs and denormals.  Should only be necessary on i386. */
 #define PD_BADFLOAT(f) ((((*(unsigned int*)&(f))&0x7f800000)==0) || \
     (((*(unsigned int*)&(f))&0x7f800000)==0x7f800000))

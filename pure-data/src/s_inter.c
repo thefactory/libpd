@@ -771,10 +771,8 @@ static int sys_poll_togui(void) /* returns 1 if did anything */
 {
     if (sys_nogui)
         return (0);
-        /* see if there is stuff still in the buffer, if so we
-            must have fallen behind, so just try to clear that. */
-    if (sys_flushtogui())
-        return (1);
+        /* in case there is stuff still in the buffer, try to flush it. */
+    sys_flushtogui();
         /* if the flush wasn't complete, wait. */
     if (sys_guibufhead > sys_guibuftail)
         return (0);
@@ -1116,6 +1114,7 @@ int sys_startgui(const char *libdir)
 #endif /* NOT __APPLE__ */
             execl("/bin/sh", "sh", "-c", sys_guicmd, (char*)0);
             perror("pd: exec");
+            fprintf(stderr, "Perhaps tcl and tk aren't yet installed?\n");
             _exit(1);
        }
 #else /* NOT _WIN32 */
@@ -1160,13 +1159,14 @@ int sys_startgui(const char *libdir)
     sprintf(cmdbuf, "%s/bin/pd-watchdog", libdir);
     if (sys_hipriority)
     {
-      struct stat statbuf;
-      {
-        if (sys_verbose) fprintf(stderr,
-           "disabling real-time priority due to missing pd-watchdog (%s)\n",
-              cmdbuf);
-        sys_hipriority = 0;
-      }
+        struct stat statbuf;
+        if (stat(cmdbuf, &statbuf) < 0)
+        {
+            fprintf(stderr,
+              "disabling real-time priority due to missing pd-watchdog (%s)\n",
+                cmdbuf);
+            sys_hipriority = 0;
+        }
     }
 
     if (sys_hipriority)
