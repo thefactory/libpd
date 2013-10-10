@@ -8,13 +8,15 @@
 #ifndef __OPENSL_RING_BUFFER_H__
 #define __OPENSL_RING_BUFFER_H__
 
+#include <stdint.h>
+
 // Simple lock-free ring buffer implementation for one writer thread and one
 // consumer thread.
 typedef struct ring_buffer {
-    int size;
+    int32_t size;
     char *buf_ptr;
-    int write_idx;
-    int read_idx;
+    int32_t write_idx;
+    int32_t read_idx;
 } ring_buffer;
 
 // Creates a ring buffer (returns NULL on failure).
