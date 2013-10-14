@@ -42,8 +42,8 @@ int rb_available_to_write(ring_buffer *buffer) {
     int32_t read_idx = __sync_fetch_and_or(&(buffer->read_idx), 0);
     int32_t write_idx = __sync_fetch_and_or(&(buffer->write_idx), 0);
 #else
-    int32_t read_idx = OSAtomicOr32(0, &(buffer->read_idx));
-    int32_t write_idx = OSAtomicOr32(0, &(buffer->write_idx));
+    int32_t read_idx = OSAtomicOr32Barrier(0, &(buffer->read_idx));
+    int32_t write_idx = OSAtomicOr32Barrier(0, &(buffer->write_idx));
 #endif
     return (buffer->size + read_idx - write_idx - 1) % buffer->size;
   } else {
@@ -58,7 +58,7 @@ int rb_available_to_read(ring_buffer *buffer) {
     int32_t write_idx = __sync_fetch_and_or(&(buffer->write_idx), 0);
 #else
     int32_t read_idx = OSAtomicOr32Barrier(0, &(buffer->read_idx));
-    int32_t write_idx = OSAtomicOr32(0, &(buffer->write_idx));
+    int32_t write_idx = OSAtomicOr32Barrier(0, &(buffer->write_idx));
 #endif
     return (buffer->size + write_idx - read_idx) % buffer->size;
   } else {
@@ -105,7 +105,7 @@ int rb_read_from_buffer(ring_buffer *buffer, char *dest, int len) {
   __sync_val_compare_and_swap(&(buffer->read_idx), read_idx,
        (read_idx + len) % buffer->size);
 #else
-  OSAtomicCompareAndSwap32(read_idx, (read_idx + len) % buffer->size,
+  OSAtomicCompareAndSwap32Barrier(read_idx, (read_idx + len) % buffer->size,
       &(buffer->read_idx));
 #endif
   return 0; 
