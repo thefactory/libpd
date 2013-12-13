@@ -82,13 +82,8 @@ static void encodeList(NSArray *list) {
 #pragma mark - Hooks
 
 static void printHook(const char *s) {
-  // after having difficulty passing in an acceptable delegate from
-  // C#, we've decided to NSLog all messages in addition to the
-  // delegate.
-  NSString *msg = [[NSString alloc] initWithCString:s encoding:NSASCIIStringEncoding];
-  NSLog(@"[Pd] %@", msg);
-
   if ([delegate respondsToSelector:@selector(receivePrint:)]) {
+    NSString *msg = [[NSString alloc] initWithCString:s encoding:NSASCIIStringEncoding];
     [delegate receivePrint:msg];
     [msg release];
   }
